@@ -198,6 +198,27 @@ python main.py --top-temporal eigenvector > temporal_top_eigenvector_full.txt
 
 - Use directed HITS evidence to discuss in/out roles (commands above in Part (j)).
 
+### Project (separate CLI: project.py)
+
+- Structural metrics for all phases (CSV):
+
+```bash
+python project.py --struct-series --out struct_series.csv
+```
+
+- Top‑k rank series and Kendall τ stability:
+
+```bash
+python project.py --rank-series --metric betweenness --topk 10 --out rank_bet_top.csv
+python project.py --rank-corr --metric hubs --k 10 --out hubs_kendall.txt
+```
+
+- Permutation test for an actor’s pre/post change (example):
+
+```bash
+python project.py --perm-test --actor n12 --metric betweenness --before 1-4 --after 5-11 --iters 5000 --out perm_n12_bet.txt
+```
+
 ### Consolidated answers
 
 All writeups for (f)–(j) are compiled in `answers_f_to_j.md` in this directory.

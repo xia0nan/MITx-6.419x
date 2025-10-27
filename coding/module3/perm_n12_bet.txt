@@ -1,0 +1,2 @@
+metric,actor,before,after,obs_diff,mean_before,mean_after,iterations,p_value
+betweenness,n12,1-4,5-11,0.263312,0.000000,0.263312,5000,0.012597

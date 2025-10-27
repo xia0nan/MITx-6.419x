@@ -55,6 +55,17 @@ def to_undirected_binary(df: pd.DataFrame) -> pd.DataFrame:
     return undirected
 
 
+def to_directed_weighted(df: pd.DataFrame):
+    """Convert the raw adjacency to a directed NetworkX DiGraph with weights."""
+    import networkx as nx
+
+    # Ensure no self loops and keep weights
+    mat = df.copy()
+    np.fill_diagonal(mat.values, 0)
+    G = nx.from_pandas_adjacency(mat, create_using=nx.DiGraph)
+    return G
+
+
 def count_nodes_edges(undirected_binary: pd.DataFrame) -> Tuple[int, int, int]:
     """Return (total_nodes, active_nodes, undirected_edges).
 
@@ -182,6 +193,17 @@ def main() -> None:
         help="Draw node labels (e.g., n1, n2, ...) on the plot",
     )
     parser.add_argument(
+        "--plot-pair",
+        type=int,
+        default=None,
+        help="Plot consecutive phases X and X+1 side-by-side (use with --with-labels)",
+    )
+    parser.add_argument(
+        "--plot-pairs-all",
+        action="store_true",
+        help="Export all consecutive phase pairs (1-2, 2-3, ..., 10-11) to ./pairs/",
+    )
+    parser.add_argument(
         "--describe-phase",
         type=int,
         default=None,
@@ -237,6 +259,24 @@ def main() -> None:
         "--stats",
         action="store_true",
         help="Print structural stats for --describe-phase (components, degree summary)",
+    )
+    parser.add_argument(
+        "--hits-phase",
+        type=int,
+        default=None,
+        help="Compute HITS (hubs/authorities) for a directed graph at this phase",
+    )
+    parser.add_argument(
+        "--hits-top",
+        type=int,
+        default=10,
+        help="Top-K to print for --hits-phase",
+    )
+    parser.add_argument(
+        "--hits-track",
+        nargs="*",
+        default=None,
+        help="Track hubs/authorities for specified nodes (e.g., n1 n3) across all phases",
     )
 
     args = parser.parse_args()
@@ -357,6 +397,110 @@ def main() -> None:
         except ImportError as e:
             print("Describing a phase requires networkx. Install it and retry.\n" + str(e))
 
+    # Plot a consecutive pair (X, X+1)
+    if args.plot_pair is not None and (args.plot_pair + 1) in phases:
+        try:
+            import networkx as nx
+            import matplotlib.pyplot as plt
+            from pathlib import Path
+
+            def _build_graph(p: int):
+                undirected = to_undirected_binary(phases[p])
+                return nx.from_pandas_adjacency(undirected)
+
+            Gx = _build_graph(args.plot_pair)
+            Gxp1 = _build_graph(args.plot_pair + 1)
+
+            try:
+                from networkx.drawing.nx_agraph import graphviz_layout
+
+                pos_x = graphviz_layout(Gx)
+                pos_y = graphviz_layout(Gxp1)
+            except Exception:
+                pos_x = nx.spring_layout(Gx, seed=42)
+                pos_y = nx.spring_layout(Gxp1, seed=42)
+
+            fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+            for ax, G, pos, title in [
+                (axes[0], Gx, pos_x, f"Phase {args.plot_pair}"),
+                (axes[1], Gxp1, pos_y, f"Phase {args.plot_pair + 1}"),
+            ]:
+                labels = {n: f"n{n}" for n in G.nodes} if args.with_labels else None
+                nx.draw(
+                    G,
+                    pos=pos,
+                    ax=ax,
+                    with_labels=args.with_labels,
+                    labels=labels,
+                    node_size=260,
+                    font_size=7,
+                    node_color="#a1e46d",
+                    edge_color="#777777",
+                    width=0.8,
+                )
+                ax.set_title(title)
+            fig.tight_layout()
+            out_dir = Path(os.path.dirname(__file__))
+            out_path = out_dir / f"pair_{args.plot_pair}_{args.plot_pair + 1}.png"
+            fig.savefig(out_path, dpi=200)
+            plt.close(fig)
+            print(f"Saved pair plot to: {out_path}")
+        except ImportError as e:
+            print("Plotting requires networkx and matplotlib.\n" + str(e))
+
+    # Export all pairs
+    if args.plot_pairs_all:
+        try:
+            import networkx as nx
+            import matplotlib.pyplot as plt
+            from pathlib import Path
+
+            out_dir = Path(os.path.dirname(__file__)) / "pairs"
+            out_dir.mkdir(parents=True, exist_ok=True)
+
+            for p in range(1, 11):
+                if p not in phases or (p + 1) not in phases:
+                    continue
+                und_x = to_undirected_binary(phases[p])
+                und_y = to_undirected_binary(phases[p + 1])
+                Gx = nx.from_pandas_adjacency(und_x)
+                Gy = nx.from_pandas_adjacency(und_y)
+                try:
+                    from networkx.drawing.nx_agraph import graphviz_layout
+
+                    pos_x = graphviz_layout(Gx)
+                    pos_y = graphviz_layout(Gy)
+                except Exception:
+                    pos_x = nx.spring_layout(Gx, seed=42)
+                    pos_y = nx.spring_layout(Gy, seed=42)
+
+                fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+                for ax, G, pos, title in [
+                    (axes[0], Gx, pos_x, f"Phase {p}"),
+                    (axes[1], Gy, pos_y, f"Phase {p + 1}"),
+                ]:
+                    labels = {n: f"n{n}" for n in G.nodes} if args.with_labels else None
+                    nx.draw(
+                        G,
+                        pos=pos,
+                        ax=ax,
+                        with_labels=args.with_labels,
+                        labels=labels,
+                        node_size=260,
+                        font_size=7,
+                        node_color="#a1e46d",
+                        edge_color="#777777",
+                        width=0.8,
+                    )
+                    ax.set_title(title)
+                fig.tight_layout()
+                out_path = out_dir / f"pair_{p}_{p + 1}.png"
+                fig.savefig(out_path, dpi=200)
+                plt.close(fig)
+                print(f"Saved: {out_path}")
+        except ImportError as e:
+            print("Plotting requires networkx and matplotlib.\n" + str(e))
+
     # Temporal means across phases (Q5)
     if args.top_temporal is not None:
         # Determine which node set to evaluate
@@ -377,6 +521,44 @@ def main() -> None:
             for rank, (nid, val) in enumerate(top3, start=1):
                 print(f"  {rank}. n{nid}: {val:.6f}")
             print("Top 3 IDs (copy for grader): " + " ".join(top_ids))
+
+    # HITS for directed graphs (Part j)
+    if args.hits_phase is not None and args.hits_phase in phases:
+        try:
+            import networkx as nx
+
+            df = phases[args.hits_phase]
+            Gd = to_directed_weighted(df)
+            hubs, auths = nx.algorithms.link_analysis.hits(
+                Gd, max_iter=1_000_000, tol=1e-08, normalized=True
+            )
+            top_h = sorted(hubs.items(), key=lambda kv: kv[1], reverse=True)[: args.hits_top]
+            top_a = sorted(auths.items(), key=lambda kv: kv[1], reverse=True)[: args.hits_top]
+            print(f"Phase {args.hits_phase} - Top hubs:")
+            for nid, val in top_h:
+                print(f"  n{nid}: {val:.6f}")
+            print(f"Phase {args.hits_phase} - Top authorities:")
+            for nid, val in top_a:
+                print(f"  n{nid}: {val:.6f}")
+        except ImportError as e:
+            print("HITS requires networkx.\n" + str(e))
+
+    if args.hits_track is not None:
+        try:
+            import networkx as nx
+
+            track_nodes = [parse_node_label(x) for x in args.hits_track] if args.hits_track else []
+            print("node,phase,hub,authority")
+            for p in sorted(phases.keys()):
+                df = phases[p]
+                Gd = to_directed_weighted(df)
+                hubs, auths = nx.algorithms.link_analysis.hits(
+                    Gd, max_iter=1_000_000, tol=1e-08, normalized=True
+                )
+                for nid in track_nodes:
+                    print(f"n{nid},{p},{hubs.get(nid, 0.0):.6f},{auths.get(nid, 0.0):.6f}")
+        except ImportError as e:
+            print("HITS requires networkx.\n" + str(e))
 
 
 if __name__ == "__main__":

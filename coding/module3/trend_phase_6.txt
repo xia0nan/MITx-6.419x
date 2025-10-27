@@ -1,0 +1,15 @@
+  requested normalized degree centralities:
+    n1: 0.692308
+    n3: 0.538462
+    n12: 0.384615
+    n83: 0.076923
+  requested normalized betweenness centralities:
+    n1: 0.542564
+    n3: 0.227179
+    n12: 0.382051
+    n83: 0.000000
+  requested eigenvector centralities (L2-normalized):
+    n1: 0.496656
+    n3: 0.454884
+    n12: 0.262167
+    n83: 0.148738

@@ -40,6 +40,18 @@ python main.py --describe-phase 3 --plot-phase 3 --with-labels --plot-out phase3
 Notes:
 - If `pygraphviz` is available, a Graphviz layout is used; otherwise the script falls back to a spring layout.
 
+- Plot two consecutive phases side‑by‑side (helps for Part (f) Q1):
+
+```bash
+python main.py --plot-pair 4 --with-labels   # plots phases 4 and 5 into pair_4_5.png
+```
+
+- Export all consecutive pairs into `coding/module3/pairs/`:
+
+```bash
+python main.py --plot-pairs-all --with-labels
+```
+
 ---
 
 ### Part (b) – Degree centrality
@@ -134,5 +146,60 @@ python main.py --top-temporal betweenness --players n1 n3 n12 n83 --only-ids
 python main.py --top-temporal betweenness --suspects-only --only-ids
 python main.py --top-temporal eigenvector --suspects-only --only-ids
 ```
+
+
+---
+
+### Part (j) – Hubs and Authorities (HITS) on directed graphs
+
+Use the directed graph for each phase and compute HITS scores:
+
+```bash
+# Top hubs and authorities for a given phase (e.g., 3)
+python main.py --hits-phase 3 --hits-top 10
+
+# Track specific nodes (e.g., n1 and n3) across all phases and print CSV
+python main.py --hits-track n1 n3 > hits_track.csv
+```
+
+---
+
+## Parts (f)–(j) – Workflow and Answers
+
+### Part (f) Q1/Q2
+
+- Identify X using the pair plots (`pairs/pair_X_X+1.png`).
+- For Q2, compare centralities across phases X and X+1 for key actors:
+
+```bash
+bash -lc 'for p in 4 5; do python main.py --describe-phase $p --centrality n1 n3 n12 n83 --betweenness n1 n3 n12 n83 --eigenvector n1 n3 n12 n83 > centralities_phase_${p}.txt; done'
+```
+
+### Part (g)
+
+- Use the size summary and temporal means:
+
+```bash
+python main.py --summary > summary_sizes.txt
+python main.py --top-temporal betweenness --only-ids > temporal_top_betweenness_ids.txt
+python main.py --top-temporal eigenvector --only-ids > temporal_top_eigenvector_ids.txt
+```
+
+### Part (h)
+
+- Inspect comprehensive temporal rankings to surface important non‑23 actors:
+
+```bash
+python main.py --top-temporal betweenness > temporal_top_betweenness_full.txt
+python main.py --top-temporal eigenvector > temporal_top_eigenvector_full.txt
+```
+
+### Part (i)
+
+- Use directed HITS evidence to discuss in/out roles (commands above in Part (j)).
+
+### Consolidated answers
+
+All writeups for (f)–(j) are compiled in `answers_f_to_j.md` in this directory.
 
 

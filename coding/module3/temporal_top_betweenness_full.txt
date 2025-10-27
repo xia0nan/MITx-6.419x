@@ -1,0 +1,5 @@
+Top 3 mean betweenness centrality across phases:
+  1. n1: 0.655051
+  2. n12: 0.167562
+  3. n3: 0.129403
+Top 3 IDs (copy for grader): 1 12 3

@@ -1,0 +1,17 @@
+CAVIAR network size per phase (undirected, binary):
+       nodes_total  nodes_active  edges
+phase                                  
+1               15            15     18
+2               24            24     28
+3               33            33     56
+4               33            33     48
+5               32            32     39
+6               27            27     47
+7               36            36     49
+8               42            42     58
+9               34            34     44
+10              42            42     50
+11              41            41     50
+Phase 2: nodes_total=24, nodes_active=24, edges=28
+Phase 6: nodes_total=27, nodes_active=27, edges=47
+Phase 10: nodes_total=42, nodes_active=42, edges=50
